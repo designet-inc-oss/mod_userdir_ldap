@@ -1,0 +1,92 @@
+mod_userdir_ldap
+================
+
+このモジュールは mod_userdir のように '/~username' 構文を使用すると
+ユーザディレクトリにアクセスすることができます。
+このモジュールはユーザのホームディレクトリのパスをLDAPサーバから検索します。
+システムアカウントは必要ではありません。
+
+mod_usedir_ldap は Apache 2.2 で使用することができます。
+
+使用方法
+----------
+
+1. 以下の手順でインストールします。
+
+    $ tar xvzf mod_user_ldap-0.1.tar.gz
+    $ cd mod_user_ldap-0.1
+    $ ./configure
+    $ make
+    # make install
+
+    configure 実行時に apxs のパスを指定することができます。
+
+    ./configure --with-apxs=APXS_PASS
+
+2. httpd.conf に設定を追加します。
+
+    以下のディレクティブを指定することができます。
+
+    UserDir
+        以下のいずれかを指定します。
+        - ユーザホームディレクトリの公開サブディレクトリ名
+        - 'disabled'
+        - 'disabled username username ...'
+        - 'enabled username username ...'
+
+    UserDirLDAPURL
+        LDAP接続のURLを指定します。RFC2255に従ったURLを指定します。
+        ldap://host[:port]/basedn[?attr[?scope[?filter]]]
+
+        host はLDAPサーバ名を指定します。リダンダントサーバを指定する場合、
+        スペース区切りのリストを使用します。
+
+        port はLDAPサーバのポート番号を指定します。オプションです。
+
+        basedn は検索を開始するベースDNを指定します。
+
+        attribute はユーザIDを検索するための属性を指定します。
+        指定しない場合のデフォルト値は uid です。
+
+        scope は検索スコープを指定します。sub または one を指定することが
+        できます。
+        指定しない場合のデフォルト値は sub です。
+
+        filter は検索時に使用するフィルタを指定します。
+        指定しない場合のデフォルト値は (objectClass=*) です。
+
+        検索は attribute と filter の組み合わせで実行されます。
+        例えばURLが
+        ldap://localhost/cn=basedn,dc=example,dc=com?uid?sub?(objectClass=*)
+        の場合、フィルタは (&((objectClass=*))(uid=username)) が使用されます。
+        username はHTTPクライアントから指定されたユーザ名が使用されます。
+        検索は cn=basedn,dc=example,dc=com からサブツリー検索が行われます。
+
+    UserDirLDAPDirAttribute
+        ホームディレクトリパスを検索する属性を指定します。
+        指定しない場合のデフォルト値は homeDirectory です。
+
+    UserDirLDAPBindDN
+        LDAPサーバにバインドするDNを指定します。
+        指定しない場合、匿名バインドを行います。
+
+    UserDirLDAPBindPW
+        LDAPサーバにバインドする時に使用するパスワードを指定します。
+        指定しない場合、匿名バインドを行います。
+
+    UserDirLDAPDereferenceAliases
+        検索時のエイリアスの扱いを指定します。
+        never, searching, finding, always を指定することができます。
+        指定しない場合のデフォルト値は always です。
+
+    (設定例)
+    UserDir public_html
+    UserDirLDAPURL ldap://localhost/cn=basedn,dc=example,dc=com?uid?sub?(objectClass=*)
+    UserDirLDAPDirAttribute homeDirectory
+    UserDirLDAPBindDN cn=manager,dc=example,dc=com
+    UserDirLDAPBindPW secret
+
+    mod_userdir_ldap の動作を制御するために mod_ldap のディレクティブ
+    (LDAPCacheTTL, LDAPCacheEntries 等)を使用することができます。
+
+3. Apache をリスタートします。

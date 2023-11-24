@@ -1,0 +1,99 @@
+dnl mod_userdir_ldap
+dnl
+dnl Copyright (C) 2006,2007 DesigNET, INC.
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2 of the License, or
+dnl (at your option) any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+
+AC_PREREQ(2.59)
+AC_INIT(mod_userdir_ldap, 0.1, moduserdirldap-manager@lists.sourceforge.jp)
+AC_CONFIG_SRCDIR([mod_userdir_ldap.c])
+
+AC_ARG_WITH(apxs,
+	    [  --with-apxs=APXS        set path to apxs(Apache v2.2) program],
+	    [ap22apxs=${withval}],
+	    [ap22apxs='no'])
+
+# Checks for programs.
+AC_PROG_CC
+#AC_PROG_LIBTOOL
+
+# Checks for libraries.
+#AC_CHECK_LIB(ldap, [], AC_MSG_ERROR([no. libldap required]))
+
+# Checks for header files.
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
+# Checks for library functions.
+
+# Find apxs
+if test "$ap22apxs" = no; then
+    AC_PATH_PROG(ap22apxs, apxs, no,
+		 /usr/local/apache2/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/opt/apache/bin:/opt/apache/sbin)
+fi
+AC_MSG_CHECKING([for apxs])
+if test -x $ap22apxs; then
+    AC_MSG_RESULT([ok])
+else
+    AC_MSG_ERROR([no. apxs is not executable])
+fi
+
+if test -f "/etc/SuSE-release"; then
+    #
+    # apxs2 in SuSE apache2-devel package DOES NOT show correct prefix
+    # (`/srv/www' instead of `/usr/share/apache2')
+    # so I'm trying to rewrite here
+    #
+    ap22package=`rpm -q apache2-devel`
+    if test -n "$ap22package"; then  
+        ap22prefix=/usr/share/apache2
+    else
+        ap22prefix=`$ap22apxs -q PREFIX`
+    fi
+else
+    ap22prefix=`$ap22apxs -q PREFIX`
+fi
+
+ap22sbindir=`$ap22apxs -q SBINDIR`
+ap22httpd=$ap22sbindir/`$ap22apxs -q TARGET`
+ap22installbuilddir=`$ap22apxs -q INSTALLBUILDDIR`
+ap22topbuilddir=`/usr/bin/dirname $ap22installbuilddir`
+
+AC_SUBST(ap22prefix)
+AC_SUBST(ap22sbindir)
+AC_SUBST(ap22installbuilddir)
+AC_SUBST(ap22topbuilddir)
+
+# Check Apache API signature
+AC_MSG_CHECKING([for httpd version])
+ap22includes=`$ap22apxs -q INCLUDEDIR`
+ap22sig=`grep '^#define MODULE_MAGIC_COOKIE .* "AP22"' $ap22includes/ap_mmn.h`
+if test -n "$ap22sig"; then
+    AC_MSG_RESULT([ok])
+else
+    AC_MSG_ERROR([is not Apache HTTP Server 2.2.x])
+fi
+
+# Check DSO enable
+AC_MSG_CHECKING([for DSO support])
+if test `$ap22httpd -l | grep mod_so.c`; then
+    AC_MSG_RESULT([ok])
+else
+    AC_MSG_ERROR([DSO not supported])
+fi
+
+AC_CONFIG_FILES([Makefile modules.mk .deps])
+AC_OUTPUT

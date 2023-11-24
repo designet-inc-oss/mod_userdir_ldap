@@ -1,0 +1,83 @@
+mod_userdir_ldap
+================
+
+This module allows user directory tobe accessed using `/~username' syntax path,
+just like mod_userdir.  To get the path of home directory of the user,
+this module searches it from LDAP server. System account is not needed any more.
+
+mod_userdir_ldap can be used with Apache 2.2.
+
+How To Use
+----------
+
+1. Install module following instructions below
+
+    $ tar xvzf mod_user_ldap-0.1.tar.gz
+    $ cd mod_user_ldap-0.1
+    $ ./configure
+    $ make
+    # make install
+
+2. Edit httpd.conf (or so)
+
+    The following directives can be specified.
+
+    UserDir
+        the public subdirectory in users' home directories, or 
+        'disabled', or 'disabled username username...', or 
+        'enabled username username...'
+
+    UserDirLDAPURL
+        URL to define LDAP connection. This should be an RFC 2255 complaint
+        URL of the form ldap://host[:port]/basedn[?attr[?scope[?filter]]].
+        Host is the name of the LDAP server. Use a space separated list of
+        hosts to specify redundant servers.
+
+        Port is optional, and specifies the port to connect to.
+
+        Basedn specifies the base DN to start searches from.
+
+        Attribute specifies what attribute to search for user ID.
+        If not provided, it defaults to uid.
+
+        Scope is the scope of the search, and can be either sub or one.
+        If not provided, the default is sub.
+
+        Filter is a filter to use in the search.
+        If not provided, defaults to (objectClass=*).
+
+        Searches are performed using the attribute and the filter combined. 
+        For example, assume that the
+        LDAP URL is ldap://localhost/cn=basedn,dc=example,dc=com?uid?sub?(objectClass=*)
+        Searches will be done using the filter (&((objectClass=*))(uid=username)),
+        where username is the user name passed by the HTTP client.
+        The search will be a subtree search on the branch cn=basedn,dc=example,dc=com
+
+    UserDirLDAPDirAttribute
+        Attribute name to search for home directory path.
+        If not provided, it defaults to homeDirectory.
+
+    UserDirLDAPBindDN
+        DN to use to bind to LDAP server. If not provided,
+        will do an anonymous bind.
+
+    UserDirLDAPBindPW
+        Password to use to bind to LDAP server. If not provided,
+        will do an anonymous bind.
+
+    UserDirLDAPDereferenceAliases
+        Determines how aliases are handled during a search. Can be one of the
+        values "never", "searching", "finding", or "always".
+        Defaults to always.
+
+    (Example)
+    UserDir public_html
+    UserDirLDAPURL ldap://localhost/cn=basedn,dc=example,dc=com?uid?sub?(objectClass=*)
+    UserDirLDAPDirAttribute homeDirectory
+    UserDirLDAPBindDN cn=manager,dc=example,dc=com
+    UserDirLDAPBindPW secret
+
+    Directives of mod_ldap (ex. LDAPCacheTTL, LDAPCacheEntries...) can also
+    control mod_userdir_ldap's operation.
+
+3. Restart/Reload Apache.
